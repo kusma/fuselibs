@@ -60,6 +60,9 @@ namespace Fuse
 			if defined(iOS)
 				_workerContext = CreateContext();
 
+			if defined(CPLUSPLUS && OPENGL)
+				OpenGL.GLES3.Initialize();
+
 			_work = new ConcurrentQueue<Action>();
 			_resetEvent = new AutoResetEvent(false);
 			_thread = new Thread(Run);
