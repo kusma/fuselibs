@@ -285,6 +285,7 @@ namespace Fuse.Android
 			StaticLayout _layout;
 			Recti _pixelBounds;
 			texture2D _result;
+			GLSyncHandle _syncHandle;
 
 			public BackgroundRender(TextRenderer textRenderer, ulong textureVersion, StaticLayout layout, Recti pixelBounds)
 			{
@@ -298,8 +299,10 @@ namespace Fuse.Android
 			{
 				_result = _textRenderer.UpdateTexture(_layout, _pixelBounds);
 
-				if defined(OpenGL)
-					OpenGL.GL.Finish();
+				if (GLES3.Supported)
+					_syncHandle = GLES3.FenceSync(GLSyncCondition.GPUCommandsComplete);
+				else
+					GL.Flush();
 
 				UpdateManager.PostAction(DoneCallback);
 			}
@@ -308,6 +311,12 @@ namespace Fuse.Android
 			{
 				if (_textureVersion == _textRenderer._wantedVersion)
 				{
+					if (GLES3.Supported)
+					{
+						GLES3.WaitSync(_syncHandle, GLWaitSyncFlags.None);
+						GLES3.DeleteSync(_syncHandle);
+					}
+
 					_textRenderer.SetTexture(_result);
 					_textRenderer._textureVersion = _textureVersion;
 				}

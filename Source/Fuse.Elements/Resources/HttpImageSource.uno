@@ -2,6 +2,9 @@ using Uno;
 using Uno.Graphics;
 using Uno.Collections;
 using Uno.UX;
+
+using OpenGL;
+
 using Fuse.Drawing;
 using Fuse.Resources.Exif;
 
@@ -164,6 +167,8 @@ namespace Fuse.Resources
 			Action<texture2D> _done;
 			Action<Exception> _fail;
 			Exception _exception;
+			extern(CPLUSPLUS && OPENGL) GLSyncHandle _syncHandle;
+
 			public BackgroundLoad(byte[] data, string contentType, Action<texture2D> done, Action<Exception> fail)
 			{
 				_data = data;
@@ -189,8 +194,18 @@ namespace Fuse.Resources
 			texture2D _tex;
 			void GWDoneCallback(texture2D tex)
 			{
-				if defined(OpenGL)
-					OpenGL.GL.Finish();
+				if defined(OPENGL)
+				{
+					if defined(CPLUSPLUS)
+					{
+						if (GLES3.Supported)
+							_syncHandle = GLES3.FenceSync(GLSyncCondition.GPUCommandsComplete);
+						else
+							GL.Flush();
+					}
+					else
+						GL.Flush();
+				}
 
 				_tex = tex;
 				UpdateManager.AddOnceAction(UIDoneCallback);
@@ -198,6 +213,15 @@ namespace Fuse.Resources
 
 			void UIDoneCallback()
 			{
+				if defined(CPLUSPLUS && OPENGL)
+				{
+					if (GLES3.Supported)
+					{
+						GLES3.WaitSync(_syncHandle, GLWaitSyncFlags.None);
+						GLES3.DeleteSync(_syncHandle);
+					}
+				}
+
 				_done(_tex);
 			}
 

@@ -1,6 +1,9 @@
 using Uno;
 using Uno.Graphics;
 using Uno.UX;
+
+using OpenGL;
+
 using Uno.Collections;
 using Uno.Compiler.ExportTargetInterop;
 using Fuse.Resources.Exif;
@@ -247,6 +250,7 @@ namespace Fuse.Resources
 			Action<Exception> _fail;
 			Exception _exception;
 			ImageOrientation _orientation;
+			extern(OPENGL) GLSyncHandle _syncHandle;
 
 			public BackgroundLoad(FileSource file, Action<texture2D, ImageOrientation> done, Action<Exception> fail)
 			{
@@ -274,8 +278,18 @@ namespace Fuse.Resources
 			texture2D _tex;
 			void GWDoneCallback(texture2D tex)
 			{
-				if defined(OpenGL)
-					OpenGL.GL.Finish();
+				if defined(OPENGL)
+				{
+					if defined(CPLUSPLUS)
+					{
+						if (GLES3.Supported)
+							_syncHandle = GLES3.FenceSync(GLSyncCondition.GPUCommandsComplete);
+						else
+							GL.Flush();
+					}
+					else
+						GL.Flush();
+				}
 
 				_tex = tex;
 				UpdateManager.PostAction(UIDoneCallback);
@@ -283,6 +297,15 @@ namespace Fuse.Resources
 
 			void UIDoneCallback()
 			{
+				if defined(CPLUSPLUS && OPENGL)
+				{
+					if (GLES3.Supported)
+					{
+						GLES3.WaitSync(_syncHandle, GLWaitSyncFlags.None);
+						GLES3.DeleteSync(_syncHandle);
+					}
+				}
+
 				_done(_tex, _orientation);
 			}
 
