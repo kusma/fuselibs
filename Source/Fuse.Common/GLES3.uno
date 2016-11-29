@@ -77,6 +77,8 @@ namespace OpenGL
 		[Require("Source.Declaration", "typedef void (GL_APIENTRY * PFNGLDELETESYNCPROC) (GLsync);\nstatic PFNGLDELETESYNCPROC glDeleteSync = NULL;")]
 		[Require("Source.Declaration", "typedef GLenum (GL_APIENTRY * PFNGLCLIENTWAITSYNCPROC) (GLsync, GLbitfield, GLuint64);\nstatic PFNGLCLIENTWAITSYNCPROC glClientWaitSync = NULL;")]
 		[Require("Source.Declaration", "typedef void (GL_APIENTRY * PFNGLWAITSYNCPROC) (GLsync, GLbitfield, GLuint64);\nstatic PFNGLWAITSYNCPROC glWaitSync = NULL;")]
+		[Require("Source.Declaration", "typedef void (GL_APIENTRY * PFNGLTEXSTORAGE2DPROC) (GLenum, GLsizei, GLenum, GLsizei, GLsizei);\nstatic PFNGLTEXSTORAGE2DPROC glTexStorage2D = NULL;")]
+		[Require("Source.Declaration", "typedef void (GL_APIENTRY * PFNGLTEXSTORAGE3DPROC) (GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei);\nstatic PFNGLTEXSTORAGE3DPROC glTexStorage3D = NULL;")]
 		static void LoadFunctions()
 		@{
 			glFenceSync = (PFNGLFENCESYNCPROC)eglGetProcAddress("glFenceSync");
@@ -84,6 +86,8 @@ namespace OpenGL
 			glDeleteSync = (PFNGLDELETESYNCPROC)eglGetProcAddress("glDeleteSync");
 			glClientWaitSync = (PFNGLCLIENTWAITSYNCPROC)eglGetProcAddress("glClientWaitSync");
 			glWaitSync = (PFNGLWAITSYNCPROC)eglGetProcAddress("glWaitSync");
+			glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)eglGetProcAddress("glTexStorage2D");
+			glTexStorage3D = (PFNGLTEXSTORAGE3DPROC)eglGetProcAddress("glTexStorage3D");
 		@}
 
 		public const ulong GLTimeoutIgnored = 0xFFFFFFFFFFFFFFFFL;
@@ -111,6 +115,16 @@ namespace OpenGL
 		public static void WaitSync(GLSyncHandle sync, GLWaitSyncFlags flags, ulong timeout = GLTimeoutIgnored)
 		@{
 			glWaitSync($0, $1, $2);
+		@}
+
+		public static void TexStorage2D(GLTextureTarget target, int levels, GLPixelFormat internalFormat, int width, int height)
+		@{
+			glTexStorage2D($0, $1, $2, $3, $4);
+		@}
+
+		public static void TexStorage3D(GLTextureTarget target, int levels, GLPixelFormat internalFormat, int width, int height, int depth)
+		@{
+			glTexStorage3D($0, $1, $2, $3, $4, $5);
 		@}
 	}
 }
