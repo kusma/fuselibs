@@ -8,6 +8,7 @@
     "../FuseTest/FuseTest.unoproj"
   ],
   "Includes": [
-    "**.uno:Source"
+    "**.uno:Source",
+    "UX/**.ux:UX"
   ]
 }

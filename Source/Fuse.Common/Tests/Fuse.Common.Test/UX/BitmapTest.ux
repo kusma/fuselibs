@@ -1,0 +1,4 @@
+<Panel ux:Class="UX.BitmapTest">
+	<Image ux:Name="BasicPNG" File="Assets/basic.png" />
+	<Image ux:Name="BasicJPG" File="Assets/basic.jpg" />
+</Panel>

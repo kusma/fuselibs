@@ -56,6 +56,7 @@
   ],
   "Includes": [
     "**.uno:Source",
+    "Internal/Bitmap.cil.uxl:Extensions",
     "Internal/DesktopFonts.stuff:Stuff",
     "Internal/FontListParser.java:Java:Android",
     "Internal/ByteBufferInputStream.java:Java:Android"
