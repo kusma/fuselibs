@@ -66,12 +66,82 @@ namespace Fuse.Internal.Bitmaps
 		@}
 	}
 
+	[ForeignInclude(Language.ObjC, "ImageIO/ImageIO.h")]
+	[Require("Xcode.Framework", "ImageIO")]
+	extern(iOS) static class IOSHelpers
+	{
+		[Foreign(Language.ObjC)]
+		public static IntPtr CreateImageFromBundlePath(string path)
+		@{
+			NSURL* url = [[NSBundle mainBundle] URLForResource:path withExtension:@""];
+			CGImageSourceRef imageSource = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+			return CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+		@}
+
+		[Foreign(Language.ObjC)]
+		public static IntPtr CreateImageFromByteArray(byte[] bytes)
+		@{
+			CFDataRef data = CFDataCreateWithBytesNoCopy(NULL, (const UInt8 *)bytes.unoArray->Ptr(), bytes.unoArray->Length(), kCFAllocatorNull);
+			CGImageSourceRef imageSource = CGImageSourceCreateWithData(data, NULL);
+			return CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+		@}
+
+		[Foreign(Language.ObjC)]
+		static int GetWidth(IntPtr image)
+		@{
+			return (int)CGImageGetWidth((CGImageRef)image);
+		@}
+
+		[Foreign(Language.ObjC)]
+		static int GetHeight(IntPtr image)
+		@{
+			return (int)CGImageGetHeight((CGImageRef)image);
+		@}
+
+		public static int2 GetSize(IntPtr image)
+		{
+			return new int2(GetWidth(image), GetHeight(image));
+		}
+
+		[Foreign(Language.ObjC)]
+		public static void Release(IntPtr image)
+		@{
+			CGImageRelease((CGImageRef)image);
+		@}
+
+		[Foreign(Language.ObjC)]
+		public static uint ReadPixel(IntPtr image, int x, int y)
+		@{
+			CFDataRef pixelData = CGDataProviderCopyData(CGImageGetDataProvider((CGImageRef)image));
+			int pitch = (int)CGImageGetBytesPerRow((CGImageRef)image);
+
+			const UInt8* data = CFDataGetBytePtr(pixelData);
+			const UInt8* pixel = data + pitch * y + x * 4;
+			int r = pixel[0];
+			int g = pixel[1];
+			int b = pixel[2];
+			int a = pixel[3];
+
+			if (a > 0)
+			{
+				// divide out alpha
+				r = (r * 255) / a;
+				g = (g * 255) / a;
+				b = (b * 255) / a;
+			}
+
+			CFRelease(pixelData);
+
+			return b | (g << 8) | (r << 16) | (a << 24); // encode as 0xAARRGGBB
+		@}
+	}
+
 	[Require("Header.Include", "uBase/BufferStream.h")]
 	[Require("Header.Include", "uImage/Bitmap.h")]
 	[Require("Header.Include", "uImage/Png.h")]
 	[Require("Header.Include", "uImage/Jpeg.h")]
 	[Require("Header.Include", "Uno/Support.h")]
-	extern(!Android && CPLUSPLUS) static class CPlusPlusHelpers
+	extern(!Android && !iOS && CPLUSPLUS) static class CPlusPlusHelpers
 	{
 		[TargetSpecificType]
 		[Set("TypeName", "uImage::Bitmap*")]
@@ -248,6 +318,11 @@ namespace Fuse.Internal.Bitmaps
 				AndroidHelpers.Recycle(_nativeBitmap);
 				_nativeBitmap = null;
 			}
+			else if defined (iOS)
+			{
+				IOSHelpers.Release(_nativeImage);
+				_nativeImage = IntPtr.Zero;
+			}
 			else if defined(CPLUSPLUS)
 			{
 				CPlusPlusHelpers.Dispose(_nativeBitmap);
@@ -276,10 +351,17 @@ namespace Fuse.Internal.Bitmaps
 			_size = AndroidHelpers.GetSize(nativeBitmap);
 		}
 
-		extern(!Android && CPLUSPLUS) CPlusPlusHelpers.NativeBitmapHandle _nativeBitmap;
-		extern(!Android && CPLUSPLUS) internal CPlusPlusHelpers.NativeBitmapHandle NativeBitmap { get { return _nativeBitmap; } }
-		extern(!Android && CPLUSPLUS) protected Bitmap(CPlusPlusHelpers.NativeBitmapHandle nativeBitmap)
+		extern(iOS) IntPtr _nativeImage;
+		extern(iOS) internal IntPtr NativeImage { get { return _nativeImage; } }
+		extern(iOS) protected Bitmap(IntPtr nativeImage)
+		{
+			_nativeImage = nativeImage;
+			_size = IOSHelpers.GetSize(nativeImage);
+		}
 
+		extern(!Android && !iOS && CPLUSPLUS) CPlusPlusHelpers.NativeBitmapHandle _nativeBitmap;
+		extern(!Android && !iOS && CPLUSPLUS) internal CPlusPlusHelpers.NativeBitmapHandle NativeBitmap { get { return _nativeBitmap; } }
+		extern(!Android && !iOS && CPLUSPLUS) protected Bitmap(CPlusPlusHelpers.NativeBitmapHandle nativeBitmap)
 		{
 			_nativeBitmap = nativeBitmap;
 			_size = CPlusPlusHelpers.GetSize(nativeBitmap);
@@ -293,6 +375,11 @@ namespace Fuse.Internal.Bitmaps
 			{
 				var nativeBitmap = AndroidHelpers.DecodeFromBundle(bundleFile.BundlePath);
 				return new Bitmap(nativeBitmap);
+			}
+			else if defined(iOS)
+			{
+				var nativeImage = IOSHelpers.CreateImageFromBundlePath("data/" + bundleFile.BundlePath);
+				return new Bitmap(nativeImage);
 			}
 			else if defined(CPLUSPLUS)
 			{
@@ -311,6 +398,11 @@ namespace Fuse.Internal.Bitmaps
 				var unoBackedByteBuffer = ForeignDataView.Create(data);
 				var nativeBitmap = AndroidHelpers.DecodeFromUnoBackedByteBuffer(unoBackedByteBuffer);
 				return new Bitmap(nativeBitmap);
+			}
+			else if defined(iOS)
+			{
+				var nativeImage = IOSHelpers.CreateImageFromByteArray(data);
+				return new Bitmap(nativeImage);
 			}
 			else
 			{
@@ -365,6 +457,11 @@ namespace Fuse.Internal.Bitmaps
 			if defined(Android)
 			{
 				var color = AndroidHelpers.GetPixel(NativeBitmap, x, y);
+				return Color.FromArgb((uint)color);
+			}
+			else if defined(iOS)
+			{
+				var color = IOSHelpers.ReadPixel(NativeImage, x, y);
 				return Color.FromArgb((uint)color);
 			}
 			else if defined(CIL)
