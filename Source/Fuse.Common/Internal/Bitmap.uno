@@ -7,12 +7,71 @@ using OpenGL;
 
 namespace Fuse.Internal.Bitmaps
 {
+	[ForeignInclude(Language.Java,
+		"android.graphics.Bitmap", "android.graphics.BitmapFactory",
+		"java.io.InputStream", "java.nio.ByteBuffer",
+		"com.fuse.android.ByteBufferInputStream",
+		"com.uno.UnoBackedByteBuffer")]
+	extern(Android) static class AndroidHelpers
+	{
+		[Foreign(Language.Java)]
+		public static void Recycle(Java.Object bitmap)
+		@{
+			((Bitmap)bitmap).recycle();
+		@}
+
+		[Foreign(Language.Java)]
+		public static Java.Object DecodeFromBundle(string pathName)
+		@{
+			try
+			{
+				InputStream stream = com.fuse.Activity.getRootActivity().getAssets().open(pathName);
+				return android.graphics.BitmapFactory.decodeStream(stream);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+				return null;
+			}
+		@}
+
+		[Foreign(Language.Java)]
+		public static Java.Object DecodeFromUnoBackedByteBuffer(Java.Object unoBackedByteBuffer)
+		@{
+			ByteBufferInputStream inputStream = new ByteBufferInputStream((UnoBackedByteBuffer)unoBackedByteBuffer);
+			return BitmapFactory.decodeStream(inputStream);
+		@}
+
+		[Foreign(Language.Java)]
+		static int GetWidth(Java.Object bitmap)
+		@{
+			return ((Bitmap)bitmap).getWidth();
+		@}
+
+		[Foreign(Language.Java)]
+		static int GetHeight(Java.Object bitmap)
+		@{
+			return ((Bitmap)bitmap).getHeight();
+		@}
+
+		public static int2 GetSize(Java.Object bitmap)
+		{
+			return new int2(GetWidth(bitmap), GetHeight(bitmap));
+		}
+
+		[Foreign(Language.Java)]
+		public static int GetPixel(Java.Object bitmap, int x, int y)
+		@{
+			return ((Bitmap)bitmap).getPixel(x, y);
+		@}
+	}
+
 	[Require("Header.Include", "uBase/BufferStream.h")]
 	[Require("Header.Include", "uImage/Bitmap.h")]
 	[Require("Header.Include", "uImage/Png.h")]
 	[Require("Header.Include", "uImage/Jpeg.h")]
 	[Require("Header.Include", "Uno/Support.h")]
-	extern(CPLUSPLUS) static class CPlusPlusHelpers
+	extern(!Android && CPLUSPLUS) static class CPlusPlusHelpers
 	{
 		[TargetSpecificType]
 		[Set("TypeName", "uImage::Bitmap*")]
@@ -178,9 +237,15 @@ namespace Fuse.Internal.Bitmaps
 	{
 		public void Dispose()
 		{
+
 			if defined(CIL)
 			{
 				_nativeBitmap.Dispose();
+				_nativeBitmap = null;
+			}
+			else if defined(Android)
+			{
+				AndroidHelpers.Recycle(_nativeBitmap);
 				_nativeBitmap = null;
 			}
 			else if defined(CPLUSPLUS)
@@ -203,9 +268,18 @@ namespace Fuse.Internal.Bitmaps
 			_size = new int2(nativeBitmap.Width, nativeBitmap.Height);
 		}
 
-		extern(CPLUSPLUS) CPlusPlusHelpers.NativeBitmapHandle _nativeBitmap;
-		extern(CPLUSPLUS) internal CPlusPlusHelpers.NativeBitmapHandle NativeBitmap { get { return _nativeBitmap; } }
-		extern(CPLUSPLUS) protected Bitmap(CPlusPlusHelpers.NativeBitmapHandle nativeBitmap)
+		extern(Android) Java.Object _nativeBitmap;
+		extern(Android) internal Java.Object NativeBitmap { get { return _nativeBitmap; } }
+		extern(Android) protected Bitmap(Java.Object nativeBitmap)
+		{
+			_nativeBitmap = nativeBitmap;
+			_size = AndroidHelpers.GetSize(nativeBitmap);
+		}
+
+		extern(!Android && CPLUSPLUS) CPlusPlusHelpers.NativeBitmapHandle _nativeBitmap;
+		extern(!Android && CPLUSPLUS) internal CPlusPlusHelpers.NativeBitmapHandle NativeBitmap { get { return _nativeBitmap; } }
+		extern(!Android && CPLUSPLUS) protected Bitmap(CPlusPlusHelpers.NativeBitmapHandle nativeBitmap)
+
 		{
 			_nativeBitmap = nativeBitmap;
 			_size = CPlusPlusHelpers.GetSize(nativeBitmap);
@@ -215,6 +289,11 @@ namespace Fuse.Internal.Bitmaps
 		{
 			if defined(CIL)
 				return LoadFromStream(bundleFile.OpenRead());
+			else if defined(Android)
+			{
+				var nativeBitmap = AndroidHelpers.DecodeFromBundle(bundleFile.BundlePath);
+				return new Bitmap(nativeBitmap);
+			}
 			else if defined(CPLUSPLUS)
 			{
 				var stream = (CppXliStream)bundleFile.OpenRead();
@@ -227,8 +306,17 @@ namespace Fuse.Internal.Bitmaps
 
 		extern(CPLUSPLUS) static Bitmap LoadFromByteArray(string pathHint, byte[] data)
 		{
-			var nativeBitmap = CPlusPlusHelpers.LoadFromByteArray(pathHint, data);
-			return new Bitmap(nativeBitmap);
+			if defined(Android)
+			{
+				var unoBackedByteBuffer = ForeignDataView.Create(data);
+				var nativeBitmap = AndroidHelpers.DecodeFromUnoBackedByteBuffer(unoBackedByteBuffer);
+				return new Bitmap(nativeBitmap);
+			}
+			else
+			{
+				var nativeBitmap = CPlusPlusHelpers.LoadFromByteArray(pathHint, data);
+				return new Bitmap(nativeBitmap);
+			}
 		}
 
 		static extern(CIL) System.Drawing.Bitmap Premultiply(System.Drawing.Bitmap input)
@@ -274,7 +362,12 @@ namespace Fuse.Internal.Bitmaps
 			if (y < 0 || y >= Size.Y)
 				throw new ArgumentOutOfRangeException(nameof(y));
 
-			if defined(CIL)
+			if defined(Android)
+			{
+				var color = AndroidHelpers.GetPixel(NativeBitmap, x, y);
+				return Color.FromArgb((uint)color);
+			}
+			else if defined(CIL)
 			{
 				var color = NativeBitmap.GetPixel(x, y);
 				return float4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
