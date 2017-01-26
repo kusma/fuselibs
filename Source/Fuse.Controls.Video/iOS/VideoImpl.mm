@@ -16,7 +16,7 @@ namespace FuseVideoImpl
 		AVPlayer * Player;
 		AVPlayerItem * PlayerItem;
 		AVPlayerItemVideoOutput * PlayerItemVideoOutput;
-		AVURLAsset * Asset;
+		AVAsset * Asset;
 		CVOpenGLESTextureRef TextureHandle;
 		CVOpenGLESTextureCacheRef TextureCacheHandle;
 		uDelegate * ErrorHandler;
