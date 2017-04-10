@@ -1,77 +1,21 @@
 <App>
+	<JavaScript>
+		var fs = require("FuseJS/FileSystem");
+
+		exports.save = function () {
+			capture.capture(fs.dataDirectory + "/test.png");
+		}
+	</JavaScript>
+
 	<ClientPanel>
 		<ScrollView>
-			<StackPanel ItemSpacing="30">
-				<Panel Width="200" Height="5" Color="Red">
-					<Shadow ux:Name="s0" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="Background" />
-				</Panel>
-
-				<Panel Width="200" Height="5" Color="Blue">
-					<Shadow ux:Name="s1" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="PerPixel" />
-				</Panel>
-
-				<Rectangle ux:Name="rectangle1" Width="200" Height="100" CornerRadius="5" Color="Red">
-					<Shadow ux:Name="s2" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="Background" />
-				</Rectangle>
-
-				<Rectangle ux:Name="rectangle2" Width="200" Height="100" CornerRadius="5" Color="Blue">
-					<Shadow ux:Name="s3" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="PerPixel" />
-				</Rectangle>
-
-				<Circle ux:Name="circle1" Width="300" Height="100" Color="Red">
-					<Shadow ux:Name="s4" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="Background" />
-				</Circle>
-
-				<Circle ux:Name="circle2" Width="300" Height="100" Color="Blue">
-					<Shadow ux:Name="s5" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="PerPixel" />
-				</Circle>
-
-				<Rectangle Width="100" Height="100" Color="Red" CornerRadius="5">
-					<Shadow ux:Name="RectangleShadow" Size="10" />
-					<Clicked>
-						<Change DurationBack="0.2" RectangleShadow.Size="20" />
-					</Clicked>
-				</Rectangle>
-
-				<StackPanel>
-					<Slider>
-						<ProgressAnimation>
-							<Change Target="rectangle1.CornerRadius" Value="50" />
-							<Change Target="rectangle2.CornerRadius" Value="50" />
-						</ProgressAnimation>
-					</Slider>
-					<Slider>
-						<ProgressAnimation>
-							<Change Target="s0.Size" Value="50" />
-							<Change Target="s1.Size" Value="50" />
-							<Change Target="s2.Size" Value="50" />
-							<Change Target="s3.Size" Value="50" />
-							<Change Target="s4.Size" Value="50" />
-							<Change Target="s5.Size" Value="50" />
-						</ProgressAnimation>
-					</Slider>
-					<Slider>
-						<ProgressAnimation>
-							<Change Target="s0.Angle" Value="360" />
-							<Change Target="s1.Angle" Value="360" />
-							<Change Target="s2.Angle" Value="360" />
-							<Change Target="s3.Angle" Value="360" />
-							<Change Target="s4.Angle" Value="360" />
-							<Change Target="s5.Angle" Value="360" />
-						</ProgressAnimation>
-					</Slider>
-					<Slider>
-						<ProgressAnimation>
-							<Change Target="s0.Distance" Value="100" />
-							<Change Target="s1.Distance" Value="100" />
-							<Change Target="s2.Distance" Value="100" />
-							<Change Target="s3.Distance" Value="100" />
-							<Change Target="s4.Distance" Value="100" />
-							<Change Target="s5.Distance" Value="100" />
-						</ProgressAnimation>
-					</Slider>
-				</StackPanel>
-
+			<StackPanel>
+				<CapturePanel ux:Name="capture">
+					<Panel Width="200" Height="5" Color="Red">
+						<Shadow ux:Name="s0" Angle="0" Distance="0" Size="0" Color="0,0,0,1" Mode="Background" />
+					</Panel>
+				</CapturePanel>
+				<Button Text="SAVE!" Clicked="{save}" />
 			</StackPanel>
 		</ScrollView>
 	</ClientPanel>

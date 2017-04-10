@@ -1,5 +1,11 @@
-using Fuse;
+using Uno;
+using Uno.IO;
+
 using OpenGL;
+
+using Fuse;
+using Fuse.Controls;
+using Fuse.Scripting;
 
 class CallJSClosure
 {
@@ -29,7 +35,8 @@ public class CapturePanel : Panel
 {
 	static CapturePanel()
 	{
-		ScriptClass.Register(typeof(CapturePanel), new ScriptMethod<CapturePanel>("capture", CaptureAsync, ExecutionThread.MainThread));
+		// ScriptClass.Register(typeof(CapturePanel), new ScriptMethod<CapturePanel>("capture", CaptureAsync, ExecutionThread.MainThread));
+		AddMember(new NativePromise<Nothing, string>("capture", TriggerCapture));
 	}
 
 	static void CaptureAsync(Context ctx, CapturePanel capturePanel, object[] args)
@@ -40,9 +47,8 @@ public class CapturePanel : Panel
 
 	CallJSClosure _captureCallback;
 
-	public void TriggerCapture(Context ctx, Function captureCallback)
+	Future<string> TriggerCapture()
 	{
-		_captureCallback = new CallJSClosure(ctx, captureCallback);
 		InvalidateVisual();
 	}
 
@@ -61,7 +67,7 @@ public class CapturePanel : Panel
 		}
 
 		var filename = "test.png";
-		var path = Path.Combine(Directory.GetUserDirectory(UserDirectory.Data), filename);
+		var path = Uno.IO.Path.Combine(Directory.GetUserDirectory(UserDirectory.Data), filename);
 
 		if defined(CPlusPlus)
 			return SaveAsPng(buffer, size.X, size.Y, path);
@@ -71,10 +77,8 @@ public class CapturePanel : Panel
 
 	protected override void DrawWithChildren(DrawContext dc)
 	{
-		if (_captureNextFrame)
+		if (_captureCallback != null)
 		{
-			_captureNextFrame = false;
-
 			var callback = _captureCallback;
 			_captureCallback = null;
 
