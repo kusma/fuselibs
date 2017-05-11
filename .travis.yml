@@ -1,3 +1,4 @@
+language: cpp
 os: osx
 
 install:
