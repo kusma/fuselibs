@@ -18,6 +18,7 @@ before_script:
   - export CXX="ccache clang++"
   - ulimit -c unlimited -S
   - rm -rf /cores/core.*
+  - export VERBOSE=1
 
 script:
   - Stuff/uno --trace doctor
