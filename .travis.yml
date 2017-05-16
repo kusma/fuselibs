@@ -13,4 +13,4 @@ before_script:
 
 script:
   - Stuff/uno doctor
-  - Stuff/uno test -tnative --timeout=30 Source
+  - Stuff/uno test -v -v -tnative --timeout=30 Source
