@@ -7,6 +7,9 @@ install:
   - brew install ccache
   - Stuff/stuff install Stuff
 
+before_script:
+  - export VERBOSE=1
+
 script:
   - Stuff/uno doctor
   - Stuff/uno test -tnative --timeout=30 Source
