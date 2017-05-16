@@ -9,6 +9,7 @@ install:
 
 before_script:
   - export VERBOSE=1
+  - export MACOSX_DEPLOYMENT_TARGET=10.9
 
 script:
   - Stuff/uno doctor
