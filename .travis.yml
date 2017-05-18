@@ -11,6 +11,16 @@ install:
 before_script:
   - export VERBOSE=1
   - export MACOSX_DEPLOYMENT_TARGET=10.9
+  - export DYLD_PRINT_LIBRARIES=1
+  - export DYLD_PRINT_LIBRARIES_POST_LAUNCH=1
+  - export DYLD_PREBIND_DEBUG=1
+  - export DYLD_PRINT_OPTS=1
+  - export DYLD_PRINT_ENV=1
+  - export DYLD_PRINT_APIS=1
+  - export DYLD_PRINT_BINDINGS=1
+  - export DYLD_PRINT_INITIALIZERS=1
+  - export DYLD_PRINT_SEGMENTS=1
+  - export DYLD_PRINT_STATISTICS=1
 
 script:
   - Stuff/uno doctor
