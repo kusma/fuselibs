@@ -36,7 +36,6 @@ namespace Fuse.Test
 		}
 
 		[Test]
-		[Ignore("https://github.com/fusetools/fuselibs/issues/2244")]
 		public void UnrootDuringRoot()
 		{
 			var p = new UX.UnrootDuringRoot();
