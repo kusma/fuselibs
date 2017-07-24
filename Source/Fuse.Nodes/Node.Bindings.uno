@@ -17,14 +17,16 @@ namespace Fuse
 
 		MiniList<Binding> _bindings;
 
-		void Root(Binding b) 
-		{ 
-			if (IsRootingStarted) b.Root(this);
+		void Root(Binding b)
+		{
+			if (IsRootingStarted)
+				b.Root(this);
 		}
 
-		void Unroot(Binding b) 
-		{ 
-			if (IsRootingStarted) b.Unroot();
+		void Unroot(Binding b)
+		{
+			if (IsRootingStarted)
+				b.Unroot();
 		}
 
 		void RootBindings()
