@@ -92,8 +92,7 @@ namespace Fuse.Internal
 				if (!Object.Equals(_list, value))
 					return false;
 
-				_list = null;
-				_mode = MiniListMode.Empty;
+				Clear();
 				return true;
 			}
 
@@ -109,8 +108,8 @@ namespace Fuse.Internal
 			{
 				if (index != 0)
 					throw new ArgumentOutOfRangeException(nameof(index));
-				_mode = MiniListMode.Empty;
-				_list = null;
+
+				Clear();
 				return;
 			}
 
