@@ -119,20 +119,8 @@ namespace Fuse.Internal
 
 		public void Clear()
 		{
-			switch (_mode)
-			{
-				case MiniListMode.Empty:
-					break;
-
-				case MiniListMode.Single:
-					_list = null;
-					_mode = MiniListMode.Empty;
-					break;
-
-				case MiniListMode.List:
-					AsList.Clear();
-					break;
-			}
+			_list = null;
+			_mode = MiniListMode.Empty;
 		}
 
 		public bool Contains(T value)
