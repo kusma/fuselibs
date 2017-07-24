@@ -26,6 +26,7 @@ namespace Fuse.Internal
 	{
 		object _list;
 		ObjectList<T> AsList { get { return (ObjectList<T>)_list; } }
+		T AsSingle { get { return (T)_list; } }
 
 		//The current mode is tracked explicitly to avoid some overhead of dynamically checking the type of `_list`.
 		MiniListMode _mode = MiniListMode.Empty;
@@ -74,7 +75,7 @@ namespace Fuse.Internal
 				//OPT: Since we primarily use this for items that don't require Value equality we
 				//should consider changing this, or making it configurable.
 				var l = new ObjectList<T>(ObjectList<T>.Equality.Value);
-				l.Add(_list as T);
+				l.Add(AsSingle);
 				_list = l;
 				_mode = MiniListMode.List;
 			}
@@ -89,7 +90,7 @@ namespace Fuse.Internal
 
 			if (_mode == MiniListMode.Single)
 			{
-				if (!Object.Equals(_list, value))
+				if (!Object.Equals(AsSingle, value))
 					return false;
 
 				Clear();
@@ -130,7 +131,7 @@ namespace Fuse.Internal
 					return false;
 
 				case MiniListMode.Single:
-					return Object.Equals(_list, value);
+					return Object.Equals(AsSingle, value);
 
 				case MiniListMode.List:
 					return AsList.Contains(value);
@@ -152,7 +153,7 @@ namespace Fuse.Internal
 					case MiniListMode.Single:
 						if (index != 0)
 							throw new IndexOutOfRangeException();
-						return _list as T;
+						return AsSingle;
 
 					case MiniListMode.List:
 						return AsList[index];
