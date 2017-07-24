@@ -211,6 +211,26 @@ namespace Fuse.Test
 			iter.Dispose();
 			return c;
 		}
-		
+
+		[Test]
+		public void MoveNext()
+		{
+			var list = new MiniList<string>();
+			Assert.IsFalse(list.GetEnumerator().MoveNext());
+
+			list.Add("foo");
+			var it = list.GetEnumerator();
+			Assert.IsTrue(it.MoveNext());
+			Assert.AreEqual("foo", it.Current);
+			Assert.IsFalse(it.MoveNext());
+
+			list.Add("bar");
+			it = list.GetEnumerator();
+			Assert.IsTrue(it.MoveNext());
+			Assert.AreEqual("foo", it.Current);
+			Assert.IsTrue(it.MoveNext());
+			Assert.AreEqual("bar", it.Current);
+			Assert.IsFalse(it.MoveNext());
+		}
 	}
 }
