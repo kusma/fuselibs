@@ -179,7 +179,7 @@ namespace Fuse.Internal
 			ObjectList<T>.Enumerator _iter;
 			MiniList<T> _source;
 			bool _first;
-			Object _value;
+			T _value;
 			MiniListMode _mode;
 
 			public Enumerator(MiniList<T> source, bool versionLock)
@@ -188,7 +188,7 @@ namespace Fuse.Internal
 				if (_mode == MiniListMode.List)
 					_iter = source.AsList.GetEnumeratorStruct(versionLock);
 				else
-					_value = source._list;
+					_value = source.AsSingle;
 				_source = source;
 				_first = true;
 			}
@@ -203,7 +203,7 @@ namespace Fuse.Internal
 							return null;
 
 						case MiniListMode.Single:
-							return _value as T;
+							return _value;
 
 						case MiniListMode.List:
 							return _iter.Current;
