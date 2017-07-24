@@ -232,5 +232,25 @@ namespace Fuse.Test
 			Assert.AreEqual("bar", it.Current);
 			Assert.IsFalse(it.MoveNext());
 		}
+
+		[Test]
+		public void Clear()
+		{
+			var list = new MiniList<string>();
+			Assert.AreEqual(0, list.Count);
+
+			list.Add("foo");
+			Assert.AreEqual(1, list.Count);
+
+			list.Clear();
+			Assert.AreEqual(0, list.Count);
+
+			// this validates that clear doesn't corrupt old enumerators
+			list.Add("foo");
+			list.Add("bar");
+			var iter = list.GetEnumeratorVersionedStruct();
+			list.Clear();
+			Assert.AreEqual("foo,bar", Join(ref iter));
+		}
 	}
 }
