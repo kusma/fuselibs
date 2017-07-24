@@ -190,26 +190,17 @@ namespace Fuse.Internal
 				else
 					_value = source.AsSingle;
 				_source = source;
-				_first = true;
+				_first = _source._mode != MiniListMode.Empty;
 			}
 
 			public T Current
 			{
 				get
 				{
-					switch (_mode)
-					{
-						case MiniListMode.Empty:
-							return null;
+					if (_mode == MiniListMode.List)
+						return _iter.Current;
 
-						case MiniListMode.Single:
-							return _value;
-
-						case MiniListMode.List:
-							return _iter.Current;
-					}
-
-					return null;
+					return _value;
 				}
 			}
 
@@ -217,38 +208,26 @@ namespace Fuse.Internal
 			{
 				if (_mode == MiniListMode.List)
 					_iter.Dispose();
-				_mode = MiniListMode.Empty;
+
 				_value = null;
 			}
 
 			public bool MoveNext()
 			{
-				switch (_mode)
-				{
-					case MiniListMode.Empty:
-						_first = false;
-						return false;
+				if (_mode == MiniListMode.List)
+					return _iter.MoveNext();
 
-					case MiniListMode.Single:
-						if (_first)
-						{
-							_first = false;
-							return true;
-						}
-						return false;
-
-					case MiniListMode.List:
-						return _iter.MoveNext();
-				}
-
-				return false;
+				var ret = _first;
+				_first = false;
+				return ret;
 			}
 
 			public void Reset()
 			{
-				_first = true;
 				if (_mode == MiniListMode.List)
 					_iter.Reset();
+
+				_first = _source._mode != MiniListMode.Empty;
 			}
 		}
 	}
