@@ -25,7 +25,7 @@ before_script:
 
 script:
   - Stuff/uno --trace doctor
-  - Stuff/uno --trace build -tios Tests/ManualTests/ManualTestingApp/ManualTestingApp.unoproj
+  - MONO_LOG_LEVEL=warning Stuff/uno --trace build -tios Tests/ManualTests/ManualTestingApp/ManualTestingApp.unoproj
   - Stuff/uno --trace test -tnative --timeout=30 Source/AllTests.unoproj
 
 after_failure:
