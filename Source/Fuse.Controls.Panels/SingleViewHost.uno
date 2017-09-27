@@ -106,8 +106,11 @@ namespace Fuse.Controls
 
 		protected override void OnRooted()
 		{
-			base.OnRooted();
 			_proxyHost = this.FindProxyHost();
+			if (_proxyHost == null)
+				throw new Exception("Could not find an IProxyHost");
+
+			base.OnRooted();
 			if (RenderToTexture == RenderState.Disabled)
 				SetOnscreen();
 
