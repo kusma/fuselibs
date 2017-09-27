@@ -310,27 +310,21 @@ namespace Fuse.Controls
 		extern(Android || iOS)
 		protected override void OnRooted()
 		{
-			WorldTransformInvalidated += OnInvalidateWorldTransform;
-
 			if (IsInGraphicsContext)
 			{
-				_glRenderer = new NativeViewRenderer();
-				_root = ViewFactory.InstantiateViewGroup();
-
 				_proxyHost = this.FindProxyHost();
 				if (_proxyHost == null)
-					Fuse.Diagnostics.InternalError(this + " could not find an IProxyHost");
+					throw new Exception("Could not find an IProxyHost");
 
+				_glRenderer = new NativeViewRenderer();
+				_root = ViewFactory.InstantiateViewGroup();
 				_nativeRenderer = new Fuse.Controls.TreeRenderer(SetRoot, ClearRoot);
 
-				if (_proxyHost != null)
-				{
-					if (!_offscreenEnabled)
-						_proxyHost.Insert(_root);
-				}
-				else
-					Fuse.Diagnostics.InternalError(this + " does not have an IProxyHost and will malfunction");
+				if (!_offscreenEnabled)
+					_proxyHost.Insert(_root);
 			}
+
+			WorldTransformInvalidated += OnInvalidateWorldTransform;
 			base.OnRooted();
 		}
 
