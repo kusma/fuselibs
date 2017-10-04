@@ -177,8 +177,8 @@ namespace Fuse
 		public void Add(Node item)
 		{
 			InsertCleanup(item);
-			Children_Add(item);
 			OnAdded(item);
+			Children_Add(item);
 		}
 
 		public bool Remove(Node item)
