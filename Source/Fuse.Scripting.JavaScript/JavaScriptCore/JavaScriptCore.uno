@@ -446,14 +446,24 @@ namespace Fuse.Scripting.JavaScriptCore
 				const ::JSValueRef arguments[],
 				::JSValueRef* exception) -> ::JSValueRef
 			{
-				@{RawCallback} unoDelegate = (@{RawCallback})JSObjectGetPrivate(function);
-				@{JSValueRef[]} unoArguments = @{JSValueRef[]:New((int)argumentCount)};
-				for (int i = 0; i < argumentCount; ++i)
+				try
 				{
-					@{JSValueRef[]:Of(unoArguments):Set(i, arguments[i])};
-				}
+					@{RawCallback} unoDelegate = (@{RawCallback})JSObjectGetPrivate(function);
+					@{JSValueRef[]} unoArguments = @{JSValueRef[]:New((int)argumentCount)};
+					for (int i = 0; i < argumentCount; ++i)
+					{
+						@{JSValueRef[]:Of(unoArguments):Set(i, arguments[i])};
+					}
 
-				return @{RawCallback:Of(unoDelegate):Call(unoArguments, exception)};
+					return @{RawCallback:Of(unoDelegate):Call(unoArguments, exception)};
+				}
+				catch (const uThrowable& __t)
+				{
+					const char* errorStr = "Scripting.Callback called as a function threw an exception";
+					::uString* unoErrorStr = ::uString::Ansi(errorStr);
+					*exception = @{JSValueRef.MakeString(JSContextRef, string):Call(ctx, unoErrorStr)};
+					return NULL;
+				}
 			};
 
 			classDef.callAsConstructor = (::JSObjectCallAsConstructorCallback) [] (
@@ -463,23 +473,33 @@ namespace Fuse.Scripting.JavaScriptCore
 				const ::JSValueRef arguments[],
 				::JSValueRef* exception) -> ::JSObjectRef
 			{
-				@{RawCallback} unoDelegate = (@{RawCallback})JSObjectGetPrivate(constructor);
-				@{JSValueRef[]} unoArguments = @{JSValueRef[]:New((int)argumentCount)};
-				for (int i = 0; i < argumentCount; ++i)
+				try
 				{
-					@{JSValueRef[]:Of(unoArguments):Set(i, arguments[i])};
-				}
+					@{RawCallback} unoDelegate = (@{RawCallback})JSObjectGetPrivate(constructor);
+					@{JSValueRef[]} unoArguments = @{JSValueRef[]:New((int)argumentCount)};
+					for (int i = 0; i < argumentCount; ++i)
+					{
+						@{JSValueRef[]:Of(unoArguments):Set(i, arguments[i])};
+					}
 
-				::JSValueRef result = @{RawCallback:Of(unoDelegate):Call(unoArguments, exception)};
-				if (!::JSValueIsObject(ctx, result))
+					::JSValueRef result = @{RawCallback:Of(unoDelegate):Call(unoArguments, exception)};
+					if (!::JSValueIsObject(ctx, result))
+					{
+						const char* errorStr
+							= "Scripting.Callback called as a constructor returned a non-object.";
+						::uString* unoErrorStr = ::uString::Ansi(errorStr);
+						*exception = @{JSValueRef.MakeString(JSContextRef, string):Call(ctx, unoErrorStr)};
+						return NULL;
+					}
+					return (::JSObjectRef)result;
+				}
+				catch (const uThrowable& __t)
 				{
-					const char* errorStr
-						= "Scripting.Callback called as a constructor returned a non-object.";
+					const char* errorStr = "Scripting.Callback called as a constructor threw an exception";
 					::uString* unoErrorStr = ::uString::Ansi(errorStr);
 					*exception = @{JSValueRef.MakeString(JSContextRef, string):Call(ctx, unoErrorStr)};
 					return NULL;
 				}
-				return (::JSObjectRef)result;
 			};
 
 			return ::JSClassCreate(&classDef);
