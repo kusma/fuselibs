@@ -227,6 +227,12 @@ public class FontListParser {
             throws XmlPullParserException, IOException {
         String indexStr = parser.getAttributeValue(null, "index");
         int index = indexStr == null ? 0 : Integer.parseInt(indexStr);
+
+        // TODO: deal with axes!
+/*
+        List<FontVariationAxis> axes = new ArrayList<FontVariationAxis>();
+*/
+
         String weightStr = parser.getAttributeValue(null, "weight");
         int weight = weightStr == null ? 400 : Integer.parseInt(weightStr);
         boolean isItalic = "italic".equals(parser.getAttributeValue(null, "style"));
@@ -236,11 +242,37 @@ public class FontListParser {
                 filename.append(parser.getText());
             }
             if (parser.getEventType() != XmlPullParser.START_TAG) continue;
+
+            // TODO: deal with axes!
+/*
+            String tag = parser.getName();
+            if (tag.equals("axis")) {
+                axes.add(readAxis(parser));
+            } else {
+                skip(parser);
+            }
+*/
             skip(parser);
         }
         String sanitizedName = FILENAME_WHITESPACE_PATTERN.matcher(filename).replaceAll("");
+
+        // TODO: deal with axes!
+/*
+        return new FontConfig.Font(sanitizedName, index,
+                axes.toArray(new FontVariationAxis[axes.size()]), weight, isItalic);
+*/
         return new Font(absoluteFontPath(sanitizedName), index, weight, isItalic);
     }
+
+/*
+    private static FontVariationAxis readAxis(XmlPullParser parser)
+            throws XmlPullParserException, IOException {
+        String tagStr = parser.getAttributeValue(null, "tag");
+        String styleValueStr = parser.getAttributeValue(null, "stylevalue");
+        skip(parser);  // axis tag is empty, ignore any contents and consume end tag
+        return new FontVariationAxis(tagStr, Float.parseFloat(styleValueStr));
+    }
+*/
 
     private static Alias readAlias(XmlPullParser parser)
             throws XmlPullParserException, IOException {
