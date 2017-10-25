@@ -10,13 +10,13 @@ namespace Fuse.Audio
 	{
 		public static void PlaySoundFromBundle(BundleFileSource file)
 		{
-			PlaySoundFromUrl("data/" + file.BundleFile.BundlePath);
+			PlaySoundFromUrl(file.BundleFile.NativeBundlePath);
 		}
 
 		[Foreign(Language.ObjC)]
 		static void PlaySoundFromUrl(string url)
 		@{
-			NSURL* uri = [NSURL fileURLWithPath:[[NSBundle bundleForClass:[StrongUnoObject class]] pathForResource:url ofType:nil]];
+			NSURL* uri = [NSURL fileURLWithPath:url];
 			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 				[[AudioHelper getInstance] playSoundFromFile:uri];
 			});
