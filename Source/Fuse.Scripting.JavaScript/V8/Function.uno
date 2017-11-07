@@ -7,7 +7,7 @@ namespace Fuse.Scripting.V8
 	internal extern(USE_V8) class Function: Scripting.Function
 	{
 		[WeakReference]
-		readonly Context _context;
+		readonly V8Context _context;
 		readonly Simple.JSFunction _function;
 
 		internal Simple.JSFunction GetJSFunction(AutoReleasePool pool)
@@ -16,7 +16,7 @@ namespace Fuse.Scripting.V8
 			return pool.AutoRelease(_function);
 		}
 
-		internal Function(Context context, Simple.JSFunction function)
+		internal Function(V8Context context, Simple.JSFunction function)
 		{
 			_context = context;
 			_function = function;
@@ -31,10 +31,10 @@ namespace Fuse.Scripting.V8
 
 		public override object Call(Scripting.Context context, params object[] args)
 		{
-			var cxt = ((Context)context)._context;
+			var cxt = ((V8Context)context)._context;
 			object result = null;
 			using (var pool = new AutoReleasePool(cxt))
-			using (var vm = new Context.EnterVM(_context))
+			using (var vm = new V8Context.EnterVM(_context))
 			{
 				var unwrappedArgs = Marshaller.UnwrapArray(_context, args, pool);
 				var thisObject = V8SimpleExtensions.Null().AsObject();
@@ -56,7 +56,7 @@ namespace Fuse.Scripting.V8
 			var cxt = _context._context;
 			Object result = null;
 			using (var pool = new AutoReleasePool(cxt))
-			using (var vm = new Context.EnterVM(_context))
+			using (var vm = new V8Context.EnterVM(_context))
 			{
 				var unwrappedArgs = Marshaller.UnwrapArray(_context, args, pool);
 				result = new Object(_context,

@@ -7,7 +7,7 @@ namespace Fuse.Scripting.V8
 	internal extern(USE_V8) class Array: Fuse.Scripting.Array
 	{
 		[WeakReference]
-		readonly Context _context;
+		readonly V8Context _context;
 		readonly Simple.JSArray _array;
 
 		internal Simple.JSArray GetJSArray(AutoReleasePool pool)
@@ -16,7 +16,7 @@ namespace Fuse.Scripting.V8
 			return pool.AutoRelease(_array);
 		}
 
-		public Array(Context context, Simple.JSArray array)
+		public Array(V8Context context, Simple.JSArray array)
 		{
 			_context = context;
 			_array = array;
@@ -36,7 +36,7 @@ namespace Fuse.Scripting.V8
 				var cxt = _context._context;
 				object result = null;
 				using (var pool = new AutoReleasePool(cxt))
-				using (var vm = new Context.EnterVM(_context))
+				using (var vm = new V8Context.EnterVM(_context))
 					result = Marshaller.Wrap(_context, _array.GetProperty(cxt, index, pool, _context._errorHandler));
 				_context.ThrowPendingExceptions();
 				return result;
@@ -45,7 +45,7 @@ namespace Fuse.Scripting.V8
 			{
 				var cxt = _context._context;
 				using (var pool = new AutoReleasePool(cxt))
-				using (var vm = new Context.EnterVM(_context))
+				using (var vm = new V8Context.EnterVM(_context))
 					_array.SetProperty(cxt, index, Marshaller.Unwrap(_context, value, pool), _context._errorHandler);
 				_context.ThrowPendingExceptions();
 			}
@@ -56,7 +56,7 @@ namespace Fuse.Scripting.V8
 			get
 			{
 				int result = 0;
-				using (var vm = new Context.EnterVM(_context))
+				using (var vm = new V8Context.EnterVM(_context))
 					result = _array.Length(_context._context);
 				_context.ThrowPendingExceptions();
 				return result;

@@ -15,7 +15,7 @@ namespace Fuse.Scripting.V8
 	{
 		readonly int _port;
 		[WeakReference]
-		readonly Context _context;
+		readonly V8Context _context;
 		List<string> _offlineMessages;
 		Socket _listenSocket;
 		object _shutdownMutex = new object();
@@ -25,7 +25,7 @@ namespace Fuse.Scripting.V8
 		State _currentState;
 
 
-		public Debugger(Context context, int port)
+		public Debugger(V8Context context, int port)
 		{
 			_context = context;
 			_port = port;
