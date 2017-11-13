@@ -99,7 +99,6 @@ namespace Fuse.Scripting
 		public readonly ExecutionThread Thread;
 
 		readonly Func<Context, T, object[], object> _method;
-		readonly Action<T> _voidMethod;
 
 		[Obsolete("Use ScriptMethod<T>(string, Uno.Func<Fuse.Scripting.Context, T, object[], object)>) instead")]
 		public ScriptMethod(string name, Func<Context, T, object[], object> method, ExecutionThread thread): this(name, method)
@@ -184,7 +183,47 @@ namespace Fuse.Scripting
 			if (method == null)
 				throw new ArgumentNullException(nameof(method));
 
-			_voidMethod = method;
+			_method = new VoidMethodClosure<T>(method, Name).Run;
+		}
+
+		class VoidMethodClosure<T>
+		{
+			readonly Action<T> _action;
+			readonly string _name;
+			public VoidMethodClosure(Action<T> action, string name)
+			{
+				_action = action;
+				_name = name;
+			}
+
+			public object Run(Context c, T obj, object[] args)
+			{
+				if (args.Length != 0)
+				{
+					var name = obj.GetType().FullName + "." + _name;
+					Fuse.Diagnostics.UserError(string.Format("{0} takes no arguments, but {1} was provided", name, args.Length), obj);
+					return null;
+				}
+
+				UpdateManager.PostAction(new CallWithoutArgumentsClosure(_action, obj).Run);
+				return null;
+			}
+
+			class CallWithoutArgumentsClosure
+			{
+				readonly Action<T> _action;
+				readonly T _obj;
+				public CallWithoutArgumentsClosure(Action<T> action, T obj)
+				{
+					_action = action;
+					_obj = obj;
+				}
+
+				public void Run()
+				{
+					_action(_obj);
+				}
+			}
 		}
 
 		/** Create a ScriptMethod that will run on the UI-thread
@@ -240,22 +279,7 @@ namespace Fuse.Scripting
 		public override object Call(Context c, object obj, object[] args)
 		{
 
-			if (_voidMethod != null)
-			{
-				if (args.Length != 0)
-				{
-					var name = obj.GetType().FullName + "." + Name;
-					Fuse.Diagnostics.UserError(string.Format("{0} takes no arguments, but {1} was provided", name, args.Length), obj);
-					return null;
-				}
-
-				UpdateManager.PostAction(new CallClosure(_voidMethod, (T)obj).Run);
-				return null;
-			}
-			else
-			{
-				return _method(c, (T)obj, args);
-			}
+			return _method(c, (T)obj, args);
 		}
 		
 		class CallClosure
