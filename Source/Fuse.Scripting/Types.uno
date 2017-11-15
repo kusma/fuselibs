@@ -6,7 +6,7 @@ namespace Fuse.Scripting
 
 		@advanced
 	*/
-	public abstract class Array : IArray
+	public abstract class Array
 	{
 		/** @advanced */
 		public abstract object this[int index] { get; set; }
@@ -29,7 +29,7 @@ namespace Fuse.Scripting
 
 		@advanced
 	*/
-	public abstract class Object : IObject
+	public abstract class Object
 	{
 		/** @advanced */
 		public abstract object this[string key] { get; set; }
