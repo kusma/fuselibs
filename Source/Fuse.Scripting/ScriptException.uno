@@ -6,7 +6,6 @@ namespace Fuse.Scripting
 		public string Name { get; private set;}
 		public string FileName { get; private set;}
 		public int LineNumber { get; private set;}
-		public string SourceLine { get; private set;}
 		public string JSStackTrace { get; private set;}
 
 		public ScriptException(
@@ -14,13 +13,11 @@ namespace Fuse.Scripting
 			string message,
 			string fileName,
 			int lineNumber,
-			string sourceLine,
 			string stackTrace) : base(message)
 		{
 			Name = name;
 			FileName = fileName;
 			LineNumber = lineNumber;
-			SourceLine = sourceLine;
 			JSStackTrace = stackTrace;
 		}
 
@@ -41,11 +38,6 @@ namespace Fuse.Scripting
 			{
 				stringBuilder.Append("Line number: ");
 				stringBuilder.AppendLine(LineNumber.ToString());
-			}
-			if (!string.IsNullOrEmpty(SourceLine))
-			{
-				stringBuilder.Append("Source line: ");
-				stringBuilder.AppendLine(SourceLine);
 			}
 			if (!string.IsNullOrEmpty(JSStackTrace))
 			{
