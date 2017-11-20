@@ -26,7 +26,13 @@ namespace Fuse.Internal.Bitmaps
 			try
 			{
 				InputStream stream = com.fuse.Activity.getRootActivity().getAssets().open(pathName);
-				return android.graphics.BitmapFactory.decodeStream(stream);
+				BitmapFactory.Options opts = new BitmapFactory.Options();
+				Bitmap ret = android.graphics.BitmapFactory.decodeStream(stream, null, opts);
+				if (opts.outMimeType != null && !(opts.outMimeType.equals("image/png") || opts.outMimeType.equals("image/jpeg")))
+				{
+					@{Fuse.Diagnostics.UserWarning(string, object, string, int, string):Call("Non-portable image-format loaded", null, "", 0, "")};
+				}
+				return ret;
 			}
 			catch (Exception e)
 			{
