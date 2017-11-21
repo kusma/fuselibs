@@ -59,19 +59,40 @@ namespace Fuse.Internal.Bitmaps
 			}
 		@}
 
+		static NativeBitmapHandle Premultiply(NativeBitmapHandle bitmap)
+		@{
+			if (bitmap->GetFormat() != uImage::FormatRGBA_8_8_8_8_UInt_Normalize)
+				return bitmap;
+
+			int width = bitmap->GetWidth(), height = bitmap->GetHeight();
+			for (int y = 0; y < height; ++y)
+			{
+				uint8_t *scanline = bitmap->GetScanlinePtr(y);
+				for (int x = 0; x < width; ++x)
+				{
+					uint8_t *pixel = scanline + x * 4;
+					pixel[0] = (pixel[0] * pixel[3]) / 255;
+					pixel[1] = (pixel[1] * pixel[3]) / 255;
+					pixel[2] = (pixel[2] * pixel[3]) / 255;
+				}
+			}
+			return bitmap;
+		@}
+
 		static NativeBitmapHandle LoadFromNativeStream(string pathHint, NativeStreamHandle stream)
 		{
+			NativeBitmapHandle bitmap = default(NativeBitmapHandle);
 			if (pathHint.ToLower().EndsWith(".png"))
 			{
 				try
 				{
-					return LoadPNGFromStream(stream);
+					bitmap = LoadPNGFromStream(stream);
 				}
 				catch (Exception outerException)
 				{
 					try
 					{
-						return LoadJPGFromStream(stream);
+						bitmap = LoadJPGFromStream(stream);
 					}
 					catch (Exception innerException)
 					{
@@ -84,13 +105,13 @@ namespace Fuse.Internal.Bitmaps
 			{
 				try
 				{
-					return LoadJPGFromStream(stream);
+					bitmap = LoadJPGFromStream(stream);
 				}
 				catch (Exception outerException)
 				{
 					try
 					{
-						return LoadPNGFromStream(stream);
+						bitmap = LoadPNGFromStream(stream);
 					}
 					catch (Exception innerException)
 					{
@@ -99,6 +120,8 @@ namespace Fuse.Internal.Bitmaps
 					}
 				}
 			}
+
+			return Premultiply(bitmap);
 		}
 
 		public static NativeBitmapHandle LoadFromByteArray(string pathHint, byte[] bytes)
@@ -137,6 +160,15 @@ namespace Fuse.Internal.Bitmaps
 		public static uint ReadPixel(NativeBitmapHandle nativeBitmap, int x, int y)
 		@{
 			uBase::Vector4u8 color = nativeBitmap->GetPixelColor(x, y);
+
+			if (color.W > 0)
+			{
+				// divide out alpha
+				color.X = (color.X * 255) / color.W;
+				color.Y = (color.Y * 255) / color.W;
+				color.Z = (color.Z * 255) / color.W;
+			}
+
 			return color.Z | (color.Y << 8) | (color.X << 16) | (color.W << 24); // encode as 0xAARRGGBB
 		@}
 	}
@@ -199,10 +231,23 @@ namespace Fuse.Internal.Bitmaps
 			return new Bitmap(nativeBitmap);
 		}
 
+		static extern(CIL) System.Drawing.Bitmap Premultiply(System.Drawing.Bitmap input)
+		{
+			if (input.PixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppPArgb)
+				return input;
+
+			var result = new System.Drawing.Bitmap(input.Width, input.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+			using (System.Drawing.Graphics gr = System.Drawing.Graphics.FromImage(result))
+			{
+				gr.DrawImage(input, new System.Drawing.Rectangle(0, 0, result.Width, result.Height));
+			}
+			return result;
+		}
+
 		static extern(CIL) Bitmap LoadFromStream(Stream stream)
 		{
 			var nativeBitmap = new System.Drawing.Bitmap(stream);
-			return new Bitmap(nativeBitmap);
+			return new Bitmap(Premultiply(nativeBitmap));
 		}
 
 		public static Bitmap LoadFromFile(FileSource fileSource)
