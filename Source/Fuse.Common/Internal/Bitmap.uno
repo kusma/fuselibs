@@ -67,6 +67,7 @@ namespace Fuse.Internal.Bitmaps
 	}
 
 	[ForeignInclude(Language.ObjC, "ImageIO/ImageIO.h")]
+	[ForeignInclude(Language.ObjC, "CoreGraphics/CoreGraphics.h")]
 	[Require("Xcode.Framework", "ImageIO")]
 	extern(iOS) static class IOSHelpers
 	{
@@ -112,11 +113,16 @@ namespace Fuse.Internal.Bitmaps
 		[Foreign(Language.ObjC)]
 		public static uint ReadPixel(IntPtr image, int x, int y)
 		@{
-			CFDataRef pixelData = CGDataProviderCopyData(CGImageGetDataProvider((CGImageRef)image));
-			int pitch = (int)CGImageGetBytesPerRow((CGImageRef)image);
+			CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+			CGContextRef context = CGBitmapContextCreate(NULL, 1, 1, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrderDefault);
 
-			const UInt8* data = CFDataGetBytePtr(pixelData);
-			const UInt8* pixel = data + pitch * y + x * 4;
+			int width = (int)CGImageGetWidth((CGImageRef)image);
+			int height = (int)CGImageGetHeight((CGImageRef)image);
+			CGRect rect = CGRectMake(-x, 1 + y - height, width, height);
+
+			CGContextDrawImage(context, rect, (CGImageRef)image);
+			const UInt8* pixel = (const UInt8*)CGBitmapContextGetData(context);
+
 			int r = pixel[0];
 			int g = pixel[1];
 			int b = pixel[2];
@@ -130,7 +136,7 @@ namespace Fuse.Internal.Bitmaps
 				b = (b * 255) / a;
 			}
 
-			CFRelease(pixelData);
+			CGContextRelease(context);
 
 			return b | (g << 8) | (r << 16) | (a << 24); // encode as 0xAARRGGBB
 		@}
