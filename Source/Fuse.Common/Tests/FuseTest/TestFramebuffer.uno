@@ -10,7 +10,7 @@ namespace FuseTest
 {
 	public class TestFramebuffer : IDisposable
 	{
-		internal TestFramebuffer(int2 size)
+		public TestFramebuffer(int2 size)
 		{
 			Framebuffer = FramebufferPool.Lock(size, Uno.Graphics.Format.RGBA8888, true);
 		}
@@ -25,7 +25,17 @@ namespace FuseTest
 
 			0, 0 is in the top-left corner, like in the rest of Fuselibs.
 		*/
-		float4 ReadDrawPixel(int2 pos)
+		float4 ReadPixel(int2 pos)
+		{
+			return ReadTexel(int2(pos.X, Framebuffer.Size.Y - 1 - pos.Y));
+		}
+
+		/**
+			Reads a texel form the captured framebuffer.
+
+			0, 0 is in the bottom-left corner, as usual in OpenGL
+		*/
+		public float4 ReadTexel(int2 pos)
 		{
 			var prevFramebuffer = GL.GetFramebufferBinding();
 			GL.BindFramebuffer(GLFramebufferTarget.Framebuffer, Framebuffer.RenderTarget.GLFramebufferHandle);
@@ -34,7 +44,7 @@ namespace FuseTest
 			{
 				var temp = new byte[4];
 				GL.PixelStore(GLPixelStoreParameter.PackAlignment, 1);
-				GL.ReadPixels(pos.X, Framebuffer.Size.Y - 1 - pos.Y, 1, 1, GLPixelFormat.Rgba, GLPixelType.UnsignedByte, temp);
+				GL.ReadPixels(pos.X, pos.Y, 1, 1, GLPixelFormat.Rgba, GLPixelType.UnsignedByte, temp);
 				return float4(temp[0] / 255.0f,
 					temp[1] / 255.0f,
 					temp[2] / 255.0f,
@@ -48,7 +58,16 @@ namespace FuseTest
 
 		public void AssertPixel(float4 expectedColor, int2 pos, float tolerance = Assert.ZeroTolerance, [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0, [CallerMemberName] string memberName = "")
 		{
-			var color = ReadDrawPixel(pos);
+			var color = ReadPixel(pos);
+			var diff = Math.Abs(color - expectedColor);
+			var maxError = Math.Max(Math.Max(diff.X, diff.Y), Math.Max(diff.Z, diff.W));
+			if (maxError > tolerance)
+				Assert.Fail(string.Format("Unexpected color at [{0}]. Got [{1}], expected [{2}].", pos, color, expectedColor), filePath, lineNumber, memberName);
+		}
+
+		public void AssertTexel(float4 expectedColor, int2 pos, float tolerance = Assert.ZeroTolerance, [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0, [CallerMemberName] string memberName = "")
+		{
+			var color = ReadTexel(pos);
 			var diff = Math.Abs(color - expectedColor);
 			var maxError = Math.Max(Math.Max(diff.X, diff.Y), Math.Max(diff.Z, diff.W));
 			if (maxError > tolerance)
