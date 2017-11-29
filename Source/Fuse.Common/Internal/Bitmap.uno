@@ -49,6 +49,12 @@ namespace Fuse.Internal.Bitmaps
 		@}
 
 		[Foreign(Language.Java)]
+		public static Java.Object CreateScaledBitmap(Java.Object bitmap, int width, int height, bool filter)
+		@{
+			return Bitmap.createScaledBitmap((Bitmap)bitmap, width, height, filter);
+		@}
+
+		[Foreign(Language.Java)]
 		static int GetWidth(Java.Object bitmap)
 		@{
 			return ((Bitmap)bitmap).getWidth();
@@ -423,7 +429,7 @@ namespace Fuse.Internal.Bitmaps
 			}
 		}
 
-		static extern(CIL) System.Drawing.Bitmap Premultiply(System.Drawing.Bitmap input)
+		static extern(CIL) System.Drawing.Bitmap ToPArgb(System.Drawing.Bitmap input)
 		{
 			if (input.PixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppPArgb)
 				return input;
@@ -439,7 +445,7 @@ namespace Fuse.Internal.Bitmaps
 		static extern(CIL) Bitmap LoadFromStream(Stream stream)
 		{
 			var nativeBitmap = new System.Drawing.Bitmap(stream);
-			return new Bitmap(Premultiply(nativeBitmap));
+			return new Bitmap(ToPArgb(nativeBitmap));
 		}
 
 		public static Bitmap LoadFromFile(FileSource fileSource)
@@ -486,6 +492,14 @@ namespace Fuse.Internal.Bitmaps
 				var color = CPlusPlusHelpers.ReadPixel(NativeBitmap, x, y);
 				return Color.FromArgb(color);
 			}
+			else
+				build_error;
+		}
+
+		public Bitmap ScaleBilinear(int2 size)
+		{
+			if defined(Android)
+				return new Bitmap(AndroidHelpers.CreateScaledBitmap(NativeBitmap, size.X, size.Y, true));
 			else
 				build_error;
 		}

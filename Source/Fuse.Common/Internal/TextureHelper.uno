@@ -87,6 +87,18 @@ namespace Fuse.Internal.Bitmaps
 		// TODO: consider making this an extension method somewhere else instead?
 		public static Texture2D UploadBitmap(Bitmap bitmap)
 		{
+			var size = bitmap.Size;
+
+			while (size.X > 1 ||
+			       size.Y > texture2D.MaxSize)
+			{
+				// use several downsamples in succession to cover a larger footprint
+				var newSize = int2(Math.Max(1, size.X / 2), Math.Max(1, size.Y / 2));
+				var newBitmap = bitmap.ScaleBilinear(newSize);
+				bitmap.Dispose();
+				bitmap = newBitmap;
+			}
+
 			if defined(Android || iOS || DOTNET)
 			{
 				var textureHandle = GL.CreateTexture();
@@ -102,12 +114,12 @@ namespace Fuse.Internal.Bitmaps
 				else
 					build_error;
 
-				return new Texture2D(textureHandle, bitmap.Size, 1, Format.RGBA8888);
+				return new Texture2D(textureHandle, size, 1, Format.RGBA8888);
 			}
 			else if defined (CPLUSPLUS)
 			{
 				var textureHandle = CPPTextureHelpers.UploadTexture(bitmap.NativeBitmap);
-				return new Texture2D(textureHandle, bitmap.Size, 1, Format.RGBA8888);
+				return new Texture2D(textureHandle, size, 1, Format.RGBA8888);
 			}
 			else
 				build_error;
