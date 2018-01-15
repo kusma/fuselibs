@@ -194,10 +194,10 @@ namespace Fuse.Controls
 			Texture2D tex, ResampleMode resampleMode,
 			float4 Color )
 		{
-			Blitter.Singleton.Blit(tex, GetSamplerState(resampleMode), false,
+			Blitter.Singleton.Blit(tex, GetSamplerState(resampleMode),
 			                       new Rect(uvPosition, uvSize), imageTransform,
 			                       new Rect(offset, size), dc.GetLocalToClipTransform(element),
-			                       Color);
+			                       Color, Blitter.BlitFlags.NonPreMultiplied);
 
 			if defined(FUSELIBS_DEBUG_DRAW_RECTS)
 				DrawRectVisualizer.Capture(offset, size, element.WorldTransform, dc);

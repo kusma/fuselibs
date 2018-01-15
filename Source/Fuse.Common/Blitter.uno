@@ -5,6 +5,13 @@ namespace Fuse.Common
 {
 	class Blitter
 	{
+		[Flags]
+		public enum BlitFlags
+		{
+			None = 0,
+			NonPreMultiplied = 1
+		}
+
 		internal static Blitter Singleton = new Blitter();
 
 		public void Blit(texture2D texture, Rect rect, float4x4 localToClipTransform, float opacity = 1.0f, bool flipY = false)
@@ -16,21 +23,21 @@ namespace Fuse.Common
 				textureTransform.M32 =  1;
 			}
 
-			Blit(texture, SamplerState.LinearClamp, true,
+			Blit(texture, SamplerState.LinearClamp,
 			     new Rect(float2(0, 0), float2(1, 1)), textureTransform,
 			     rect, localToClipTransform,
 			     float4(1, 1, 1, opacity));
 		}
 
-		public void Blit(Texture2D texture, SamplerState samplerState, bool preMultiplied,
+		public void Blit(Texture2D texture, SamplerState samplerState,
 		                 Rect textureRect, float3x3 textureTransform,
 		                 Rect localRect, float4x4 localToClipTransform,
-		                 float4 color)
+		                 float4 color, BlitFlags flags = BlitFlags.None)
 		{
 			BlendOperand srcRGB, dstRGB;
 			BlendOperand srcA, dstA;
 
-			if (preMultiplied)
+			if (!flags.HasFlag(BlitFlags.NonPreMultiplied))
 			{
 				srcRGB = BlendOperand.One;
 				dstRGB = BlendOperand.OneMinusSrcAlpha;
