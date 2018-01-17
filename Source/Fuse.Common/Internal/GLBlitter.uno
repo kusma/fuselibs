@@ -193,5 +193,81 @@ namespace Fuse.Internal
 
 			GL.UseProgram(GLProgramHandle.Zero);
 		}
+
+		static GLProgramHandle CreateFillProgram()
+		{
+			var vertexShaderSource =
+				"#ifdef GL_ES\n" +
+				"precision highp float;\n" +
+				"#endif\n" +
+				"attribute vec2 VertexPositionAttribute;\n" +
+				"uniform mat4 VertexTransformUniform;\n" +
+				"void main()\n" +
+				"{\n" +
+				"\tgl_Position = VertexTransformUniform * vec4(VertexPositionAttribute, 0.0, 1.0);\n" +
+				"}\n";
+
+			var fragmentShaderSource =
+				"#ifdef GL_ES\n" +
+				"precision mediump float;\n" +
+				"#endif\n" +
+				"uniform vec4 ColorUniform;\n" +
+				"void main()\n" +
+				"{\n" +
+				"\tgl_FragColor = ColorUniform;\n" +
+				"}\n";
+
+			var vertexShader = GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
+			var fragmentShader = GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
+			return GLHelpers.LinkProgram(vertexShader, fragmentShader);
+		}
+
+		GLProgramHandle _fillProgramHandle;
+		int _fillVertexPositionAttributeLocation;
+
+		public void Fill(Rect localRect, float4x4 localToClipTransform,
+		                 float4 color)
+		{
+			if (_fillProgramHandle == GLProgramHandle.Zero)
+			{
+				_fillProgramHandle = CreateFillProgram();
+				_fillVertexPositionAttributeLocation = GL.GetAttribLocation(_fillProgramHandle, "VertexPositionAttribute");
+			}
+			GL.UseProgram(_fillProgramHandle);
+
+			var positionTranslation = Matrix.Translation(localRect.Minimum.X, localRect.Minimum.Y, 0);
+			var positionScaling = Matrix.Scaling(localRect.Size.X, localRect.Size.Y, 1);
+			var positionMatrix = Matrix.Mul(Matrix.Mul(positionScaling, positionTranslation), localToClipTransform);
+
+			color = float4(color.XYZ * color.W, color.W);
+
+			var vertexTransformUniformLocation = GL.GetUniformLocation(_fillProgramHandle, "VertexTransformUniform");
+			var colorUniformLocation = GL.GetUniformLocation(_fillProgramHandle, "ColorUniform");
+
+			GL.UniformMatrix4(vertexTransformUniformLocation, false, positionMatrix);
+			GL.Uniform4(colorUniformLocation, color);
+
+			SetupBlending();
+
+			// misc render-state
+			GL.Disable(GLEnableCap.CullFace);
+			GL.Disable(GLEnableCap.DepthTest);
+			GL.DepthMask(true);
+			GL.ColorMask(true, true, true, true);
+
+			if (_rectangleVertexBuffer == GLBufferHandle.Zero)
+				_rectangleVertexBuffer = CreateRectangleVertexBuffer();
+
+			GL.BindBuffer(GLBufferTarget.ArrayBuffer, _rectangleVertexBuffer);
+			GL.VertexAttribPointer(_fillVertexPositionAttributeLocation, 2, GLDataType.Float, false, sizeof(float2), 0);
+			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GLBufferHandle.Zero);
+			GL.EnableVertexAttribArray(_fillVertexPositionAttributeLocation);
+
+			GL.DrawArrays(GLPrimitiveType.Triangles, 0, 6);
+
+			GL.DisableVertexAttribArray(_fillVertexPositionAttributeLocation);
+
+			GL.UseProgram(GLProgramHandle.Zero);
+		}
 	}
 }
