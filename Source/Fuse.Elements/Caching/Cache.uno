@@ -240,7 +240,7 @@ namespace Fuse.Elements
 			{
 				var size = float2(tile.Texture.Size.X, tile.Texture.Size.Y) / dc.ViewportPixelsPerPoint;
 				var localToClipTransform = Matrix.Mul(tile._compositMatrix, dc.Viewport.ViewProjectionTransform);
-				Blitter.Singleton.Blit(tile.Texture, new Rect(float2(0), size), localToClipTransform, opacity, true, dc.CullFace);
+				Blitter.Singleton.Blit(tile.Texture, new Rect(float2(0), size), localToClipTransform, opacity, true);
 
 				if defined(FUSELIBS_DEBUG_DRAW_RECTS)
 					DrawRectVisualizer.Capture(float2(0), float2(tile.Texture.Size.X, tile.Texture.Size.Y), tile._compositMatrix, dc);
