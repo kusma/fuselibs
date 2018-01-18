@@ -215,6 +215,7 @@ namespace Fuse.Controls
 		float4 _scale9Margin = float4(10);
 		bool _hasScale9Margin;
 		/** For `StretchMode="Scale9"` this defines the four margins that split the video into 9-sections for scaling. */
+		[Obsolete]
 		public float4 Scale9Margin
 		{
 			get { return _scale9Margin; }
