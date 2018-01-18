@@ -7,7 +7,7 @@ namespace Fuse.Common
 	{
 		internal static Blitter Singleton = new Blitter();
 
-		public void Blit(texture2D texture, Rect rect, float4x4 localToClipTransform, float opacity = 1.0f, bool flipY = false, PolygonFace cullFace = PolygonFace.None)
+		public void Blit(texture2D texture, Rect rect, float4x4 localToClipTransform, float opacity = 1.0f, bool flipY = false)
 		{
 			float3x3 textureTransform = float3x3.Identity;
 			if (flipY)
@@ -25,7 +25,7 @@ namespace Fuse.Common
 		public void Blit(Texture2D texture, SamplerState samplerState, bool preMultiplied,
 		                 Rect textureRect, float3x3 textureTransform,
 		                 Rect localRect, float4x4 localToClipTransform,
-		                 float4 color, PolygonFace cullFace = PolygonFace.None)
+		                 float4 color)
 		{
 			BlendOperand srcRGB, dstRGB;
 			BlendOperand srcA, dstA;
@@ -68,7 +68,7 @@ namespace Fuse.Common
 				BlendSrcAlpha: srcA;
 				BlendDstAlpha: dstA;
 
-				CullFace : cullFace;
+				CullFace : PolygonFace.None;
 				DepthTestEnabled: false;
 				float2[] verts: readonly new float2[] {
 
