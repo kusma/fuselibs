@@ -69,6 +69,13 @@ namespace Fuse.Internal
 			SetupSamplerState(samplerState);
 		}
 
+		static GLProgramHandle CreateProgram(string vertexShaderSource, string fragmentShaderSource)
+		{
+			var vertexShader = GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
+			var fragmentShader = GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
+			return GLHelpers.LinkProgram(vertexShader, fragmentShader);
+		}
+
 		static GLProgramHandle CreateBlitProgram()
 		{
 			var vertexShaderSource =
@@ -97,9 +104,7 @@ namespace Fuse.Internal
 				"\tgl_FragColor = texture2D(Texture, TextureCoordinate) * ColorUniform;\n" +
 				"}\n";
 
-			var vertexShader = GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
-			var fragmentShader = GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
-			return GLHelpers.LinkProgram(vertexShader, fragmentShader);
+			return CreateProgram(vertexShaderSource, fragmentShaderSource);
 		}
 
 		static GLBufferHandle CreateRectangleVertexBuffer()
@@ -217,9 +222,7 @@ namespace Fuse.Internal
 				"\tgl_FragColor = ColorUniform;\n" +
 				"}\n";
 
-			var vertexShader = GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
-			var fragmentShader = GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
-			return GLHelpers.LinkProgram(vertexShader, fragmentShader);
+			return CreateProgram(vertexShaderSource, fragmentShaderSource);
 		}
 
 		GLProgramHandle _fillProgramHandle;
