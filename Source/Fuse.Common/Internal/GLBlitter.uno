@@ -2,7 +2,6 @@ using Fuse.Common;
 
 using Uno;
 using Uno.Graphics;
-using Uno.Runtime.Implementation.ShaderBackends.OpenGL;
 
 using OpenGL;
 
@@ -10,72 +9,6 @@ namespace Fuse.Internal
 {
 	extern(OpenGL) class GLBlitter
 	{
-		static GLTextureParameterValue TextureFilterToGL(TextureFilter textureFilter)
-		{
-			switch (textureFilter)
-			{
-			case TextureFilter.Nearest: return GLTextureParameterValue.Nearest;
-			case TextureFilter.Linear: return GLTextureParameterValue.Linear;
-			case TextureFilter.NearestMipmapNearest: return GLTextureParameterValue.NearestMipmapNearest;
-			case TextureFilter.LinearMipmapNearest: return GLTextureParameterValue.LinearMipmapNearest;
-			case TextureFilter.NearestMipmapLinear: return GLTextureParameterValue.NearestMipmapLinear;
-			case TextureFilter.LinearMipmapLinear: return GLTextureParameterValue.LinearMipmapLinear;
-
-			default:
-				throw new NotSupportedException("Unsupported texture filter: " + textureFilter);
-			}
-		}
-
-		static GLTextureParameterValue TextureAddressModeToGL(TextureAddressMode textureAddressMode)
-		{
-			switch (textureAddressMode)
-			{
-			case TextureAddressMode.Wrap: return GLTextureParameterValue.Repeat;
-			case TextureAddressMode.Clamp: return GLTextureParameterValue.ClampToEdge;
-			default:
-				throw new NotSupportedException("Unsupported texture address-mode: " + textureAddressMode);
-			}
-		}
-
-		static void SetupBlending(bool preMultiplied = true)
-		{
-			GL.Enable(GLEnableCap.Blend);
-			if (preMultiplied)
-			{
-				GL.BlendFuncSeparate(
-					GLBlendingFactor.One, GLBlendingFactor.OneMinusSrcAlpha,
-					GLBlendingFactor.OneMinusDstAlpha, GLBlendingFactor.One);
-			}
-			else
-			{
-				GL.BlendFuncSeparate(
-					GLBlendingFactor.SrcAlpha, GLBlendingFactor.OneMinusSrcAlpha,
-					GLBlendingFactor.One, GLBlendingFactor.OneMinusSrcAlpha);
-			}
-		}
-
-		static void SetupSamplerState(SamplerState samplerState)
-		{
-			GL.TexParameter(GLTextureTarget.Texture2D, GLTextureParameterName.MinFilter, TextureFilterToGL(samplerState.MinFilter));
-			GL.TexParameter(GLTextureTarget.Texture2D, GLTextureParameterName.MagFilter, TextureFilterToGL(samplerState.MagFilter));
-			GL.TexParameter(GLTextureTarget.Texture2D, GLTextureParameterName.WrapS, TextureAddressModeToGL(samplerState.AddressU));
-			GL.TexParameter(GLTextureTarget.Texture2D, GLTextureParameterName.WrapT, TextureAddressModeToGL(samplerState.AddressV));
-		}
-
-		static void SetupTextureSampler(GLTextureUnit textureUnit, GLTextureHandle textureHandle, SamplerState samplerState)
-		{
-			GL.ActiveTexture(textureUnit);
-			GL.BindTexture(GLTextureTarget.Texture2D, textureHandle);
-			SetupSamplerState(samplerState);
-		}
-
-		static GLProgramHandle CreateProgram(string vertexShaderSource, string fragmentShaderSource)
-		{
-			var vertexShader = GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
-			var fragmentShader = GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
-			return GLHelpers.LinkProgram(vertexShader, fragmentShader);
-		}
-
 		static GLProgramHandle CreateBlitProgram()
 		{
 			var vertexShaderSource =
@@ -104,36 +37,20 @@ namespace Fuse.Internal
 				"\tgl_FragColor = texture2D(Texture, TextureCoordinate) * ColorUniform;\n" +
 				"}\n";
 
-			return CreateProgram(vertexShaderSource, fragmentShaderSource);
-		}
-
-		static GLBufferHandle CreateRectangleVertexBuffer()
-		{
-			var verts = new float2[]
-			{
-				float2(0, 0),
-				float2(1, 0),
-				float2(1, 1),
-
-				float2(1, 1),
-				float2(0, 1),
-				float2(0, 0),
-			};
-
-			var vb = new Buffer(verts.Length * sizeof(float2));
-			for (int i = 0; i < verts.Length; i++)
-				vb.Set(i * sizeof(float2), verts[i]);
-
-			var result = GL.CreateBuffer();
-			GL.BindBuffer(GLBufferTarget.ArrayBuffer, result);
-			GL.BufferData(GLBufferTarget.ArrayBuffer, vb, GLBufferUsage.StaticDraw);
-			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GLBufferHandle.Zero);
-			return result;
+			return GLHelpers.CreateProgram(vertexShaderSource, fragmentShaderSource);
 		}
 
 		GLProgramHandle _blitProgramHandle;
 		int _blitVertexPositionAttributeLocation;
 		GLBufferHandle _rectangleVertexBuffer;
+
+		GLBufferHandle GetRectangleVertexBuffer()
+		{
+			if (_rectangleVertexBuffer == GLBufferHandle.Zero)
+				_rectangleVertexBuffer = GLHelpers.CreateRectangleVertexBuffer();
+
+			return _rectangleVertexBuffer;
+		}
 
 		public void Blit(Texture2D texture, SamplerState samplerState,
 		                 Rect textureRect, float3x3 textureTransform,
@@ -174,8 +91,8 @@ namespace Fuse.Internal
 			GL.Uniform1(textureUniformLocation, 0);
 			GL.Uniform4(colorUniformLocation, color);
 
-			SetupBlending(preMultiplied);
-			SetupTextureSampler(GLTextureUnit.Texture0, texture.GLTextureHandle, samplerState);
+			GLHelpers.SetupBlending(preMultiplied);
+			GLHelpers.SetupTextureSampler(GLTextureUnit.Texture0, texture.GLTextureHandle, samplerState);
 
 			// misc render-state
 			GL.Disable(GLEnableCap.CullFace);
@@ -183,10 +100,7 @@ namespace Fuse.Internal
 			GL.DepthMask(true);
 			GL.ColorMask(true, true, true, true);
 
-			if (_rectangleVertexBuffer == GLBufferHandle.Zero)
-				_rectangleVertexBuffer = CreateRectangleVertexBuffer();
-
-			GL.BindBuffer(GLBufferTarget.ArrayBuffer, _rectangleVertexBuffer);
+			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GetRectangleVertexBuffer());
 			GL.VertexAttribPointer(_blitVertexPositionAttributeLocation, 2, GLDataType.Float, false, sizeof(float2), 0);
 			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GLBufferHandle.Zero);
 			GL.EnableVertexAttribArray(_blitVertexPositionAttributeLocation);
@@ -222,7 +136,7 @@ namespace Fuse.Internal
 				"\tgl_FragColor = ColorUniform;\n" +
 				"}\n";
 
-			return CreateProgram(vertexShaderSource, fragmentShaderSource);
+			return GLHelpers.CreateProgram(vertexShaderSource, fragmentShaderSource);
 		}
 
 		GLProgramHandle _fillProgramHandle;
@@ -250,7 +164,7 @@ namespace Fuse.Internal
 			GL.UniformMatrix4(vertexTransformUniformLocation, false, positionMatrix);
 			GL.Uniform4(colorUniformLocation, color);
 
-			SetupBlending();
+			GLHelpers.SetupBlending();
 
 			// misc render-state
 			GL.Disable(GLEnableCap.CullFace);
@@ -258,10 +172,7 @@ namespace Fuse.Internal
 			GL.DepthMask(true);
 			GL.ColorMask(true, true, true, true);
 
-			if (_rectangleVertexBuffer == GLBufferHandle.Zero)
-				_rectangleVertexBuffer = CreateRectangleVertexBuffer();
-
-			GL.BindBuffer(GLBufferTarget.ArrayBuffer, _rectangleVertexBuffer);
+			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GetRectangleVertexBuffer());
 			GL.VertexAttribPointer(_fillVertexPositionAttributeLocation, 2, GLDataType.Float, false, sizeof(float2), 0);
 			GL.BindBuffer(GLBufferTarget.ArrayBuffer, GLBufferHandle.Zero);
 			GL.EnableVertexAttribArray(_fillVertexPositionAttributeLocation);
