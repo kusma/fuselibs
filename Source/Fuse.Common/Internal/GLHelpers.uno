@@ -1,17 +1,106 @@
 using Uno;
+using Uno.Diagnostics;
 using Uno.Graphics;
 
 using OpenGL;
 
 namespace Fuse.Internal
 {
+	extern(OpenGL) class GLErrorException : Exception
+	{
+		public readonly GLError ErrorCode;
+
+		public GLErrorException(GLError glError)
+		{
+			ErrorCode = glError;
+		}
+
+		public override string ToString()
+		{
+			return base.ToString() + "\nOpenGL error code: " + ErrorCode;
+		}
+	}
+
 	extern(OpenGL) static class GLHelpers
 	{
+		public static void CheckError()
+		{
+			var err = GL.GetError();
+			if (err != GLError.NoError)
+				throw new GLErrorException(err);
+		}
+
+		public static GLShaderHandle CompileShader(GLShaderType type, string source)
+		{
+			var handle = GL.CreateShader(type);
+			GL.ShaderSource(handle, source);
+			GL.CompileShader(handle);
+
+			if (GL.GetShaderParameter(handle, GLShaderParameter.CompileStatus) != 1)
+			{
+				var log = GL.GetShaderInfoLog(handle);
+				GL.DeleteShader(handle);
+				throw new Exception("Error compiling shader (" + type + "):\n\n" + log + "\n\nSource:\n\n" + source);
+			}
+			else
+			{
+				var log = GL.GetShaderInfoLog(handle);
+				if (log.Length > 0)
+					Debug.Log("error compiling shader: " + log);
+			}
+
+			CheckError();
+			return handle;
+		}
+
+		static bool _driverHasGetProgramInfoLogQuirk;
+		public static GLProgramHandle LinkProgram(GLShaderHandle vertexShader, GLShaderHandle fragmentShader)
+		{
+			var handle = GL.CreateProgram();
+			GL.AttachShader(handle, vertexShader);
+			GL.AttachShader(handle, fragmentShader);
+			GL.LinkProgram(handle);
+
+			if (GL.GetProgramParameter(handle, GLProgramParameter.LinkStatus) != 1)
+			{
+				var log = GL.GetProgramInfoLog(handle);
+				GL.DeleteProgram(handle);
+				throw new Exception("Error linking shader program:\n\n" + log);
+			}
+			else
+			{
+				if (!_driverHasGetProgramInfoLogQuirk)
+				{
+					CheckError();
+					var log = GL.GetProgramInfoLog(handle);
+
+					/* It seems some OpenGL implementations report InvalidOperation for
+					 * successfully linked shaders here, but doing so has no support in
+					 * the OpenGL ES 2.0 nor OpenGL 4.6 specifications.
+					 */
+					var err = GL.GetError();
+					if (err != GLError.NoError)
+					{
+						if (err == GLError.InvalidOperation)
+							_driverHasGetProgramInfoLogQuirk = true;
+						else
+							throw new GLErrorException(err);
+					}
+
+					if (log.Length > 0)
+						Debug.Log("error linking shader: " + log);
+				}
+			}
+
+			CheckError();
+			return handle;
+		}
+
 		public static GLProgramHandle CreateProgram(string vertexShaderSource, string fragmentShaderSource)
 		{
-			var vertexShader = Uno.Runtime.Implementation.ShaderBackends.OpenGL.GLHelpers.CompileShader(GLShaderType.VertexShader, vertexShaderSource);
-			var fragmentShader = Uno.Runtime.Implementation.ShaderBackends.OpenGL.GLHelpers.CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
-			return Uno.Runtime.Implementation.ShaderBackends.OpenGL.GLHelpers.LinkProgram(vertexShader, fragmentShader);
+			var vertexShader = CompileShader(GLShaderType.VertexShader, vertexShaderSource);
+			var fragmentShader = CompileShader(GLShaderType.FragmentShader, fragmentShaderSource);
+			return LinkProgram(vertexShader, fragmentShader);
 		}
 
 		public static void SetupBlending(bool preMultiplied = true)
