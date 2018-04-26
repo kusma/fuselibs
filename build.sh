@@ -12,5 +12,6 @@ esac
 set -e
 cd "`dirname "$0"`"
 
+nuget install -OutputDirectory Stuff/ -ExcludeVersion
 $clr Stuff/stuff.exe install Stuff
 $clr Stuff/uno.exe doctor $*

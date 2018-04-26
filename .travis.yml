@@ -16,7 +16,7 @@ install:
   - wget https://files.fusetools.com/tooling/eTVvQ6T4pMUK-Mono.zip -O mono.zip &&
     unzip -d mono mono.zip &&
     export PATH=$PATH:$PWD/mono/bin
-  - Stuff/stuff install Stuff
+  - nuget install -OutputDirectory Stuff/ -ExcludeVersion
 
 before_script:
   - ulimit -c unlimited -S
