@@ -13,9 +13,7 @@ env:
 install:
   - sudo easy_install pip
   - pip install six
-  - wget https://files.fusetools.com/tooling/eTVvQ6T4pMUK-Mono.zip -O mono.zip &&
-    unzip -d mono mono.zip &&
-    export PATH=$PATH:$PWD/mono/bin
+  - brew install mono mono-libgdiplus
   - Stuff/stuff install Stuff
 
 before_script:
